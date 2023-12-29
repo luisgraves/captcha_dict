@@ -1,0 +1,51 @@
+import discord
+import random
+import string
+
+# Токен вашего бота Discord
+TOKEN = 'YOUR_DISCORD_BOT_TOKEN'
+
+# Префикс для активации команд бота
+PREFIX = '!'
+
+# Создаем экземпляр клиента Discord
+client = discord.Client()
+
+# Словарь для хранения текущих капч пользователей
+captcha_dict = {}
+
+# Функция для создания случайной капчи
+def generate_captcha():
+    captcha_letters = ''.join(random.choices(string.ascii_letters + string.digits, k=6))
+    return captcha_letters
+
+@client.event
+async def on_ready():
+    print(f'Бот {client.user} готов к работе')
+
+@client.event
+async def on_message(message):
+    if message.author == client.user:
+        return
+
+    if message.content.startswith(PREFIX) and message.content.lower() == f'{PREFIX}captcha':
+        # Генерируем капчу для пользователя
+        captcha_text = generate_captcha()
+        captcha_dict[message.author.id] = captcha_text
+
+        # Отправляем капчу пользователю в личные сообщения
+        await message.author.send(f'Пройдите капчу: `{captcha_text}`')
+
+    # Проверка капчи
+    if message.author.id in captcha_dict.keys():
+        user_captcha_input = message.content
+        actual_captcha = captcha_dict[message.author.id]
+
+        if user_captcha_input == actual_captcha:
+            del captcha_dict[message.author.id]
+            await message.author.send('Капча пройдена успешно!')
+        else:
+            await message.author.send('Неверная капча, попробуйте еще раз.')
+
+# Запуск бота
+client.run(TOKEN)
